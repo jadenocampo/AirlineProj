@@ -7,15 +7,17 @@ public class AirlineReservationSystem extends JFrame implements ActionListener {
     private JComboBox<String> startingCityBox, destinationCityBox, flightNumberBox, classBox, seatPreferenceBox, snackBox;
     private JComboBox<String> monthBox, dayBox, yearBox, departureTimeBox; // Separate boxes for Month, Day, and Year
     private JButton reserveButton;
-    private JLabel statusLabel;
+    private JLabel statusLabel, seatsRemainingLabel;
 
     // Flights
     private Flight gos1, gos2;
+    //Seat counter 
+    private int reservationCount = 0;
 
     public AirlineReservationSystem() {
-        // Initialize flights with constructor setting number of seats
-        gos1 = new Flight("GOS 1", "Greensboro", "Newark", "7:00 AM", "9:00 AM", 100);
-        gos2 = new Flight("GOS 2", "Newark", "Greensboro", "5:30 PM", "7:00 PM", 100);
+        // Initialize flights with constructor  , end int is number of seats 
+        gos1 = new Flight("GOS 1", "Greensboro", "Newark", "7:00 AM", "9:00 AM", 3);
+        gos2 = new Flight("GOS 2", "Newark", "Greensboro", "5:30 PM", "7:00 PM", 3);
 
         // Set up GUI
         setTitle("Greensboro Airlines Reservation System");
@@ -110,6 +112,10 @@ public class AirlineReservationSystem extends JFrame implements ActionListener {
         snackBox.setBounds(150, 350, 200, 25);
         add(snackBox);
 
+        seatsRemainingLabel = new JLabel("Seats Available: " + gos1.getSeatsAvailable());
+        seatsRemainingLabel.setBounds(20, 500, 300, 25);
+        add(seatsRemainingLabel);
+
         reserveButton = new JButton("Reserve Ticket");
         reserveButton.setBounds(20, 380, 330, 25);
         reserveButton.addActionListener(this);
@@ -119,11 +125,14 @@ public class AirlineReservationSystem extends JFrame implements ActionListener {
         statusLabel.setBounds(20, 410, 350, 100);
         add(statusLabel);
 
-        // Initially hide seat preference and snack options for Economy class
-        seatPreferenceLabel.setVisible(false);
+        // Set visibility for seat preference and snack options based on class selection
         seatPreferenceBox.setVisible(false);
-        snackLabel.setVisible(false);
         snackBox.setVisible(false);
+
+        // Update seat availability when user changes flight, starting city, or destination city
+        startingCityBox.addActionListener(this);
+        destinationCityBox.addActionListener(this);
+        flightNumberBox.addActionListener(this);
 
         setVisible(true);
     }
@@ -156,7 +165,6 @@ public class AirlineReservationSystem extends JFrame implements ActionListener {
         if (e.getSource() == classBox) {
             String selectedClass = (String) classBox.getSelectedItem();
             boolean isBusiness = selectedClass.equals("Business");
-            // Show or hide seat preference and snack options based on class
             seatPreferenceBox.setVisible(isBusiness);
             snackBox.setVisible(isBusiness);
         } else if (e.getSource() == reserveButton) {
@@ -180,8 +188,18 @@ public class AirlineReservationSystem extends JFrame implements ActionListener {
             // Select flight
             Flight flight = flightNumber.equals("GOS 1") ? gos1 : gos2;
 
+            if (reservationCount >= 30) {
+                statusLabel.setText("No more seats available. Please change the flight or other details.");
+                return;
+            }
+
             try {
-                flight.reserveSeat(); // Check seat availability and reserve
+                flight.reserveSeat(); // Reserve a seat
+
+                // Update reservation count and available seats
+                reservationCount++;
+                seatsRemainingLabel.setText("Seats Available: " + flight.getSeatsAvailable());
+
                 Ticket ticket;
                 String departureDate = month + "/" + day + "/" + year; // Construct the full date
 
@@ -199,6 +217,15 @@ public class AirlineReservationSystem extends JFrame implements ActionListener {
             } catch (RuntimeException ex) {
                 statusLabel.setText(ex.getMessage());
             }
+        }
+// ____________------ not workn properly only resets when flight number gets changed 
+        // Reset reservation counter and update available seats when any dropdown changes
+        if (e.getSource() == startingCityBox || e.getSource() == destinationCityBox || e.getSource() == flightNumberBox
+            || e.getSource() == monthBox || e.getSource() == dayBox || e.getSource() == yearBox || e.getSource() == departureTimeBox) {
+
+            reservationCount = 0;
+            Flight flight = flightNumberBox.getSelectedItem().equals("GOS 1") ? gos1 : gos2;
+            seatsRemainingLabel.setText("Seats Available: " + flight.getSeatsAvailable());
         }
     }
 
